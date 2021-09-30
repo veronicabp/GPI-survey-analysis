@@ -3,16 +3,17 @@ import os
 import numpy as np
 from scipy import stats
 from tabulate import tabulate
+import matplotlib.pyplot as plt
 
 treatment_description = {
 	"T1": "China is an economic threat to the US",
 	"T2": "China is a threat to human rights",
-	"T3": "Control",
+	"T3": "China is a military threat to the US",
 	"T4": "China is not an economic threat",
 	"T5": "China is not a threat to human rights",
-	"T6": "China is a military threat to the US",
-	"T7": "China is not a military threat to the US",
-	"T8": "US-China cooperation is important to fight climate change"
+	"T6": "China is not a military threat to the US",
+	"T7": "US-China cooperation is important to fight climate change",
+	"T8": "Control"
 }
 
 question_description = {
@@ -117,17 +118,17 @@ with open(data_file, 'r') as f:
 		elif row[18] == "Yes":
 		 	treatment = "T2"
 		elif row[19] == "Yes":
-		 	treatment = "T3"
+		 	treatment = "T8"
 		elif row[20] == "Yes":
 		 	treatment = "T4"
 		elif row[21] == "Yes":
 		 	treatment = "T5"
 		elif row[22] == "Yes":
-		 	treatment = "T6"
+		 	treatment = "T3"
 		elif row[23] == "Yes":
-		 	treatment = "T7"
+		 	treatment = "T6"
 		elif row[24] == "Yes":
-		 	treatment = "T8"
+		 	treatment = "T7"
 
 		responses = {
 		 	"Q1" : convert_response_to_number(row[25]),
@@ -175,11 +176,11 @@ for treatment in treatment_description:
 # Hypothesis Testing
 #############################################################################
 
-control_treatment = "T3"
+control_treatment = "T8"
 
 for question_index, question in enumerate(question_description):
 	print("="*100)
-	print(question_description[question])
+	print(f"{question}: {question_description[question]}")
 	print("="*100)
 	print("\n")
 	for t in results:
@@ -195,9 +196,35 @@ for question_index, question in enumerate(question_description):
 				print(f'P-Val: {round(pval,2)}')
 	print("\n\n\n")
 
+#############################################################################
+# Graphing
+#############################################################################
 
+for question_index, question in enumerate(question_description):
 
+	fig, ax = plt.subplots()
 
+	labels = [treatment_label for treatment_label in treatment_description]
 
+	means = []
+	for treatment in results:
+		means.append(np.mean(results[treatment][question_index]))
+
+	error = []
+	for treatment in results:
+		error.append(np.std(results[treatment][question_index]))
+
+	x_pos = np.arange(len(treatment_description))
+
+	ax.bar(x_pos, means, yerr=error, align='center', alpha=0.5, ecolor='black', capsize=10)
+	ax.set_ylabel('Mean response')
+	ax.set_xticks(x_pos)
+	ax.set_xticklabels(labels)
+	ax.set_title(f'Responses to {question} by treatment')
+	ax.yaxis.grid(True)
+
+	plt.tight_layout()
+	plt.savefig(os.path.join('..','graphics',f'{question}.png'))
+	# plt.show()
 
 
