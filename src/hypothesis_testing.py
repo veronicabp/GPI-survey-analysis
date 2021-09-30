@@ -1,5 +1,7 @@
 import csv
 import os
+import numpy as np
+from scipy import stats
 from tabulate import tabulate
 
 treatment_description = {
@@ -14,18 +16,18 @@ treatment_description = {
 }
 
 question_description = {
-	"Q1": "Human rights abuses in China concern me.\n\n\n",
-	"Q2": "I am confident that China will be able to\nhandle allegations of human rights abuses against them\nwithout US or international intervention.\n\n\n",
-	"Q3": "The widely reported internment of Muslim Uyghurs\nand other ethnic minorities in China, which has been termed\na genocide by human rights groups, has led to the emergence of\na boycott of the 2022 Beijing Olympics.\nChina reported that they will punish countries that boycott\nthe Games with political sanctions and commercial retaliation,\ntherefore impacting international trade.\n\nAmerican companies should boycott the Beijing Olympics.\n\n\n",
-	"Q4": "I believe the US should invest money and\nresources in promoting human rights in China.\n\n\n",
-	"Q5": "China's economic growth concerns me.\n\n\n",
-	"Q6": "U.S. sanctions on China affect both countries.\nAs a result of recent sanctions, Americans lost an estimate 0.3\npercent of real GDP, equivalent to nearly 300,000 jobs.\nThese sanctions were estimated to negatively impact China's economy\nby hundreds of billions of dollars.\n\nI believe that the benefits of placing sanctions on China outweigh the costs.\n\n\n",
-	"Q7": "I am willing to spend more on an item\nthat was not made in China.\n\n\n",
-	"Q8": "If forced to pick between the two, I think\nthat it is more important for the U.S. to develop a\ngood relationship with China than for the U.S.\nto prioritize staying ahead of China.\n\n\n",
-	"Q9": "China's military and technological advances concern me.\n\n\n",
-	"Q10": "The U.S. should invest resources into developing\ninternational cybersecurity regulations to limit\ncyber threats from foreign nations.\n\n\n",
-	"Q11": "Currently, the U.S. has more than one hundred thousand\ntroops in the Asia-Pacific region and several military\nbases in Korea, Japan and Guam. China has expressed\nopposition to extensive U.S. military presence in the region, taking retaliatory\neconomic action against the U.S. and its allies.\n\nThe U.S. should reduce its military presence near China,\nin order to try to improve relations with China.\n\n\n",
-	"Q12": "I believe that the U.S. should invest less resources\ninto military and defense.\n\n\n"
+	"Q1": "Human rights abuses in China concern me.",
+	"Q2": "I am confident that China will be able to\nhandle allegations of human rights abuses against them\nwithout US or international intervention.",
+	"Q3": "The widely reported internment of Muslim Uyghurs\nand other ethnic minorities in China, which has been termed\na genocide by human rights groups, has led to the emergence of\na boycott of the 2022 Beijing Olympics.\nChina reported that they will punish countries that boycott\nthe Games with political sanctions and commercial retaliation,\ntherefore impacting international trade.\n\nAmerican companies should boycott the Beijing Olympics.",
+	"Q4": "I believe the US should invest money and\nresources in promoting human rights in China.",
+	"Q5": "China's economic growth concerns me.",
+	"Q6": "U.S. sanctions on China affect both countries.\nAs a result of recent sanctions, Americans lost an estimate 0.3\npercent of real GDP, equivalent to nearly 300,000 jobs.\nThese sanctions were estimated to negatively impact China's economy\nby hundreds of billions of dollars.\n\nI believe that the benefits of placing sanctions on China outweigh the costs.",
+	"Q7": "I am willing to spend more on an item\nthat was not made in China.",
+	"Q8": "If forced to pick between the two, I think\nthat it is more important for the U.S. to develop a\ngood relationship with China than for the U.S.\nto prioritize staying ahead of China.",
+	"Q9": "China's military and technological advances concern me.",
+	"Q10": "The U.S. should invest resources into developing\ninternational cybersecurity regulations to limit\ncyber threats from foreign nations.",
+	"Q11": "Currently, the U.S. has more than one hundred thousand\ntroops in the Asia-Pacific region and several military\nbases in Korea, Japan and Guam. China has expressed\nopposition to extensive U.S. military presence in the region, taking retaliatory\neconomic action against the U.S. and its allies.\n\nThe U.S. should reduce its military presence near China,\nin order to try to improve relations with China.",
+	"Q12": "I believe that the U.S. should invest less resources\ninto military and defense."
 }
 
 political_knowledge_questions = [
@@ -78,7 +80,7 @@ class SurveyRespondent:
 		output += "Responses:\n"
 		response_table = []
 		for question_label in self.responses:
-			response_table.append([question_description[question_label], convert_number_to_response(responses[question_label])])
+			response_table.append([question_description[question_label] + "\n\n\n", convert_number_to_response(responses[question_label])])
 		output += tabulate(response_table, headers = ["Question", "Response"], tablefmt='fancy_grid')
 
 		output += "\n\nDemographics:\n"
@@ -91,8 +93,11 @@ class SurveyRespondent:
 		output += "\n===============================================\n\n"
 		return output
 
-respondents = []
+#############################################################################
+# Create list of SurveyRespondent objects
+#############################################################################
 
+respondents = []
 data_file = os.path.join('..','data','survey_results.csv')
 with open(data_file, 'r') as f:
 	reader = csv.reader(f)
@@ -151,6 +156,48 @@ with open(data_file, 'r') as f:
 
 # for respondent in respondents:
 # 	print(respondent)
+
+#############################################################################
+# Store data as numpy arrays
+#############################################################################
+
+results = {}
+for treatment in treatment_description:
+	lst = []
+	for respondent in respondents:
+		if respondent.treatment == treatment:
+			lst.append([respondent.responses[question] for question in respondent.responses])
+
+	arr = np.transpose(np.array(lst))
+	results[treatment] = arr
+
+#############################################################################
+# Hypothesis Testing
+#############################################################################
+
+control_treatment = "T3"
+
+for question_index, question in enumerate(question_description):
+	print("="*100)
+	print(question_description[question])
+	print("="*100)
+	print("\n")
+	for t in results:
+		if treatment_description[t] != "Control":
+			stat, pval = stats.ttest_ind(results[t][question_index], results[control_treatment][question_index])
+
+			if pval < .1:
+
+				print("-"*100)
+				print("Two-sided t-test:")
+				print(f"{t}: {treatment_description[t]} -- Mean: {round(np.mean(results[t][question_index]),2)}")
+				print(f"{control_treatment}: {treatment_description[control_treatment]} -- Mean: {round(np.mean(results[control_treatment][question_index]),2)}")
+				print(f'P-Val: {round(pval,2)}')
+	print("\n\n\n")
+
+
+
+
 
 
 
