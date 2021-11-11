@@ -6,7 +6,7 @@ data <- read_csv("FALL 2021/GPI Initiative /survey_data.csv")
 #remove the first 25 and last 4 columns and first 2 rows
 data = data[-1,]
 data = data[-1,]
-for (i in 1:25){ data = dplyr::select(data, -1)}
+for (i in 1:17){ data = dplyr::select(data, -1)}
 for (i in 1:4){ data = dplyr::select(data, -ncol(data))}
 
 #make data ordinal
@@ -42,6 +42,13 @@ names(data)[names(data) == "Q4"] <- "Education"
 names(data)[names(data) == "Q5"] <- "Ethnicity"
 names(data)[names(data) == "Q6"] <- "Political_Party"
 names(data)[names(data) == "Q15"] <- "Political_Involvement"
+# names(data)[names(data) == "Q7"] <- "Treatment_1"
+# names(data)[names(data) == "Q28"] <- "Treatment_2"
+# names(data)[names(data) == "Q12"] <- "Treament_3"
+# names(data)[names(data) == "Q13"] <- "Treatment_4"
+# names(data)[names(data) == "Q9"] <- "Treatment_5"
+# names(data)[names(data) == "Q14"] <- "Treatment_6"
+# names(data)[names(data) == "Q29"] <- "Treatment 7"
 
 
 # remove row with participant over 75 and less than high school because there is only one 
@@ -63,7 +70,9 @@ train = data[index,]
 test = data[-index,]
 
 #library(dplyr)
+# library(MASS) 
 model <- polr(Humanitarian_Q1 ~ Age + Income + Education + Ethnicity + Political_Party + Political_Involvement, data = train, Hess = TRUE)
+# model <- polr(Humanitarian_Q1 ~ Age + Income + Education + Ethnicity + Political_Party + Political_Involvement, Treatment_1, Treatment_2, Treatment_3, Treatment_4, Treatment_5, Treatment_6, Treatment_7, data = train, Hess = TRUE)
 summary(model)
 
 #Confusion Matrix 
