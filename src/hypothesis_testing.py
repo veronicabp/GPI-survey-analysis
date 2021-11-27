@@ -36,7 +36,7 @@ def ptest(data):
 # Graphing
 #############################################################################
 
-def graph_bar(data, output_path):
+def graph_bar(data):
     for question_index, question in enumerate(question_description):
 
         if len(data["T1"])==0:
@@ -65,7 +65,7 @@ def graph_bar(data, output_path):
         ax.yaxis.grid(True)
 
         plt.tight_layout()
-        plt.savefig(os.path.join(output_path, f'{question}.png'))
+        plt.savefig(os.path.join("..","graphics", f'{question}.png'))
         # plt.show()
 
 #############################################################################
@@ -95,4 +95,5 @@ if __name__ == "__main__":
 
     # print(data)
     ptest(data) 
+    graph_bar(data)
 
