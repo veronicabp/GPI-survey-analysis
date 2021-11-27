@@ -2,6 +2,9 @@ import csv
 import os
 import numpy as np
 from tabulate import tabulate
+import pickle
+from geopy.geocoders import Nominatim
+from utils import *
 
 treatment_description = {
     "T1": "China is an economic threat to the US",
@@ -62,9 +65,23 @@ def convert_number_to_response(number):
     elif number == -2:
         return "Strongly disagree"
 
+def valid_presidents(str):
+
+    if "i don't know" in str.lower():
+        return False
+
+    results = str.split(",")
+    if len(results) != 3:
+        return False
+
+    return True
+
 
 class SurveyRespondent:
-    def __init__(self, treatment, responses, age, income, education, ethnicity, party, political_involvement, political_knowledge):
+    def __init__(self, ip, duration, location, treatment, responses, age, income, education, ethnicity, party, political_involvement, political_knowledge):
+        self.ip = ip 
+        self.duration = duration 
+        self.location = location
         self.treatment = treatment
         self.responses = responses
         self.age = age
@@ -73,7 +90,25 @@ class SurveyRespondent:
         self.ethnicity = ethnicity
         self.party = party
         self.political_involvement = political_involvement
-        self.political_knowledge = political_knowledge
+        self.political_knowledge_responses = political_knowledge
+
+    def political_knowledge(self):
+        pk = 0
+
+        if "democrat" in self.political_knowledge_responses[0].lower():
+            pk += 1
+
+        if "6" in self.political_knowledge_responses[1] or "six" in self.political_knowledge_responses[1].lower():
+            pk += 1
+
+        if valid_presidents(self.political_knowledge_responses[2]):
+            pk += 1
+
+        if get_distance("trans pacific partnership", self.political_knowledge_responses[3].lower()) < 3:
+            pk += 1
+
+        return pk
+
 
     def __str__(self):
         output = "===============================================\n"
@@ -152,6 +187,9 @@ with open(data_file, 'r') as f:
             "Q12": convert_response_to_number(row[36])
         }
 
+        ip = row[3]
+        duration = float(row[5])
+        location = (row[13], row[14]) #(latitude , longitude)
         age = row[37]
         income = row[38]
         education = row[39]
@@ -160,19 +198,57 @@ with open(data_file, 'r') as f:
         political_involvement = row[42]
         political_knowledge = [row[43], row[44], row[45], row[46]]
 
-        respondents.append(SurveyRespondent(treatment, responses, age, income,
+        respondents.append(SurveyRespondent(ip, duration, location, treatment, responses, age, income,
                                             education, ethnicity, party, political_involvement, political_knowledge))
-#############################################################################
-# Store data as numpy arrays
-#############################################################################
 
-results = {}
-for treatment in treatment_description:
-    lst = []
-    for respondent in respondents:
-        if respondent.treatment == treatment:
-            lst.append([respondent.responses[question]
-                        for question in respondent.responses])
 
-    arr = np.transpose(np.array(lst))
-    results[treatment] = arr
+if  __name__ == "__main__":
+
+    #############################################################################
+    # Clean data
+    #############################################################################
+
+    geolocator = Nominatim(user_agent="geoapiExercises")
+
+    cleaned_respondents = []
+    for i, respondent in enumerate(respondents):
+        print("="*30)
+        print(f"[{i}/{len(respondents)}]")
+        location = geolocator.reverse(f"{respondent.location[0]}, {respondent.location[1]}")
+        address = location.raw["address"]
+
+        try:
+            print(f"\nlocation: ", address["country"])
+
+            if address["country"] == "United States" and respondent.duration > 60 and respondent.duration < 10000:
+                cleaned_respondents.append(respondent)
+        except Exception as e:
+            print("Error: ", e)
+
+        print("Political Knowledge: ", respondent.political_knowledge())
+
+    respondents = cleaned_respondents
+
+    #############################################################################
+    # Store data as numpy arrays
+    #############################################################################
+
+    results = {}
+    for treatment in treatment_description:
+        row = []
+        for respondent in respondents:
+            if respondent.treatment == treatment:
+                row.append([respondent.responses[question]
+                            for question in respondent.responses])
+
+        results[treatment] = np.transpose(np.array(row))
+
+    # Export results dictionary
+    output_file = os.path.join("..", "data", "data")
+    with open(output_file, "wb") as f:
+        pickle.dump(results, f)
+
+    # Export respondent object data
+    output_file = os.path.join("..", "data", "respondent_objects")
+    with open(output_file, "wb") as f:
+        pickle.dump(respondents, f)

@@ -2,7 +2,8 @@ import os
 import numpy as np
 from scipy import stats
 import matplotlib.pyplot as plt
-from respondents_treatments import question_description, results, treatment_description
+import pickle
+from respondents_treatments import question_description, treatment_description, SurveyRespondent
 #############################################################################
 # Hypothesis Testing
 #############################################################################
@@ -20,8 +21,7 @@ def ptest(data):
             if treatment_description[t] != "Control" and len(data[t])>0 and len(data[control_treatment])>0:
                 stat, pval = stats.ttest_ind(
                     data[t][question_index], data[control_treatment][question_index])
-
-                if pval < .1:
+                if pval < 0.1:
 
                     print("-"*100)
                     print("Two-sided t-test:")
@@ -67,3 +67,32 @@ def graph_bar(data, output_path):
         plt.tight_layout()
         plt.savefig(os.path.join(output_path, f'{question}.png'))
         # plt.show()
+
+#############################################################################
+# Run Tests
+#############################################################################
+
+if __name__ == "__main__":
+
+
+    input_file = os.path.join("..", "data", "respondent_objects")
+    with open(input_file, "rb") as f:
+        respondents = pickle.load(f)
+
+
+    input_file = os.path.join("..", "data", "data")
+    with open(input_file, "rb") as f:
+        data = pickle.load(f)
+
+    data = {}
+    for treatment in treatment_description:
+        row = []
+        for respondent in respondents:
+            if respondent.treatment == treatment:
+                row.append([respondent.responses[question] for question in respondent.responses])
+        row = np.transpose(np.array(row))
+        data[treatment] = row
+
+    # print(data)
+    ptest(data) 
+

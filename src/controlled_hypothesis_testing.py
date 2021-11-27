@@ -1,15 +1,62 @@
-from respondents_treatments import respondents, treatment_description
+from respondents_treatments import respondents, treatment_description, question_description
 from hypothesis_testing import ptest, graph_bar
 
 import numpy as np
 import os
+import matplotlib.pyplot as plt
+
+def graph_multiple_bar(data, output_path):
+	for question_index, question in enumerate(question_description):
+
+		categories = list(data.keys())
+		colors = ["r","b","g","c","m","orange","pink"]
+
+		first_key = categories[0]
+		if len(data[first_key]["T1"])==0:
+			continue
+
+		fig, ax = plt.subplots()
+
+		width = 0.25
+		current_pos = 0
+		for i, category in enumerate(data):
+			labels = [treatment_label for treatment_label in treatment_description]
+
+			means = []
+			for treatment in data[category]:
+				means.append(np.mean(data[category][treatment][question_index]))
+
+			error = []
+			for treatment in data[category]:
+				error.append(np.std(data[category][treatment][question_index]))
+
+			x_pos = np.arange(len(treatment_description))
+
+			# ax.bar(x_pos + current_pos, means, width=width, yerr=error, align='center',
+			# 	   alpha=0.5, ecolor='black', capsize=10, label = category, color = colors[i])
+			ax.bar(x_pos + current_pos, means, width=width, alpha=0.5, label = category, color = colors[i])
+
+			current_pos += width
+
+		ax.set_ylabel('Mean response')
+		ax.set_xticks(x_pos + width/2)
+		ax.set_xticklabels(labels)
+		ax.set_title(f'Responses to {question} by treatment')
+		ax.yaxis.grid(True)
+		ax.legend()
+
+		plt.tight_layout()
+		plt.savefig(os.path.join(output_path, f'{question}.png'))
+		# plt.show()
 
 # Control for political party
 
-parties = ["Republican", "Democrat", "Independent"]
+parties = ["Republican", "Democrat"]
+party_data = dict()
 
 for party in parties:
 	print(f"Party: {party}")
+	num = 0
 	results = {}
 	for treatment in treatment_description:
 		lst = []
@@ -19,132 +66,136 @@ for party in parties:
 
 		arr = np.transpose(np.array(lst))
 		results[treatment] = arr
-	ptest(results)
-	graph_bar(results, os.path.join('..','graphics','controlled_tests','party', party))
+		num += len(lst)
+	ptest(results) 
+	# graph_bar(results, os.path.join('..','graphics','controlled_tests','party', party))
 
-# Control for age
+	party_data[party] = results
+graph_multiple_bar(party_data, os.path.join('..','graphics','controlled_tests','party'))
 
-ages = ["Under 18", "18 - 24", "25 - 34", "35 - 44", "45 - 54", "55 - 64", "65 - 74", "75 - 84", "85 or older"]
-age_dict = {
-	"young": ["Under 18", "18 - 24", "25 - 34"],
-	"middle_age": [ "35 - 44", "45 - 54", "55 - 64"],
-	"old": [ "65 - 74", "75 - 84", "85 or older"]
-}
+# # Control for age
 
-for age in age_dict:
-	print(f"Age: {age}")
-	results = {}
-	for treatment in treatment_description:
-		lst = []
-		for respondent in respondents:
-			if respondent.treatment == treatment and respondent.age in age_dict[age]:
-				lst.append([respondent.responses[question] for question in respondent.responses])
+# ages = ["Under 18", "18 - 24", "25 - 34", "35 - 44", "45 - 54", "55 - 64", "65 - 74", "75 - 84", "85 or older"]
+# age_dict = {
+# 	"young": ["Under 18", "18 - 24", "25 - 34"],
+# 	"middle_age": [ "35 - 44", "45 - 54", "55 - 64"],
+# 	"old": [ "65 - 74", "75 - 84", "85 or older"]
+# }
 
-		arr = np.transpose(np.array(lst))
-		results[treatment] = arr
+# for age in age_dict:
+# 	print(f"Age: {age}")
+# 	results = {}
+# 	for treatment in treatment_description:
+# 		lst = []
+# 		for respondent in respondents:
+# 			if respondent.treatment == treatment and respondent.age in age_dict[age]:
+# 				lst.append([respondent.responses[question] for question in respondent.responses])
 
-	ptest(results)
+# 		arr = np.transpose(np.array(lst))
+# 		results[treatment] = arr
 
-	try:	
-		os.mkdir( os.path.join('..','graphics','controlled_tests','age', age))
-	except:
-		print("folder already exists")
+# 	ptest(results)
 
-	try:
-		graph_bar(results, os.path.join('..','graphics','controlled_tests','age', age))
-	except:
-		print()
+# 	try:	
+# 		os.mkdir( os.path.join('..','graphics','controlled_tests','age', age))
+# 	except:
+# 		print("folder already exists")
 
-# Control for income
+# 	try:
+# 		graph_bar(results, os.path.join('..','graphics','controlled_tests','age', age))
+# 	except:
+# 		print()
 
-# Control for political involvement
+# # Control for income
 
-# involvement = ["Highly involved", "Moderately involved", "Neutral", "Not very involved", "Not involved at all"]
+# # Control for political involvement
 
-for inv in involvement:
-	print(f"Political Involvement: {inv}")
-	results = {}
-	for treatment in treatment_description:
-		lst = []
-		for respondent in respondents:
-			if respondent.treatment == treatment and respondent.political_involvement == inv:
-				lst.append([respondent.responses[question] for question in respondent.responses])
+# # involvement = ["Highly involved", "Moderately involved", "Neutral", "Not very involved", "Not involved at all"]
 
-		arr = np.transpose(np.array(lst))
-		results[treatment] = arr
+# for inv in involvement:
+# 	print(f"Political Involvement: {inv}")
+# 	results = {}
+# 	for treatment in treatment_description:
+# 		lst = []
+# 		for respondent in respondents:
+# 			if respondent.treatment == treatment and respondent.political_involvement == inv:
+# 				lst.append([respondent.responses[question] for question in respondent.responses])
 
-	ptest(results)
+# 		arr = np.transpose(np.array(lst))
+# 		results[treatment] = arr
 
-	path = os.path.join('..','graphics','controlled_tests','involvement', inv)
+# 	ptest(results)
 
-	try:	
-		os.mkdir(path)
-	except:
-		print("folder already exists")
+# 	path = os.path.join('..','graphics','controlled_tests','involvement', inv)
 
-	try:
-		graph_bar(results, path)
-	except:
-		print()
+# 	try:	
+# 		os.mkdir(path)
+# 	except:
+# 		print("folder already exists")
 
-# Control for education
+# 	try:
+# 		graph_bar(results, path)
+# 	except:
+# 		print()
 
-education = ["Less than high school", "High school graduate", "Some college", "2 year degree", "4 year degree", "Professional degree", "Doctorate"]
+# # Control for education
 
-for edu in education:
-	print(f"Education level: {edu}")
-	results = {}
-	for treatment in treatment_description:
-		lst = []
-		for respondent in respondents:
-			if respondent.treatment == treatment and respondent.education == edu:
-				lst.append([respondent.responses[question] for question in respondent.responses])
+# education = ["Less than high school", "High school graduate", "Some college", "2 year degree", "4 year degree", "Professional degree", "Doctorate"]
 
-		arr = np.transpose(np.array(lst))
-		results[treatment] = arr
+# for edu in education:
+# 	print(f"Education level: {edu}")
+# 	results = {}
+# 	for treatment in treatment_description:
+# 		lst = []
+# 		for respondent in respondents:
+# 			if respondent.treatment == treatment and respondent.education == edu:
+# 				lst.append([respondent.responses[question] for question in respondent.responses])
 
-	ptest(results)
+# 		arr = np.transpose(np.array(lst))
+# 		results[treatment] = arr
 
-	path = os.path.join('..','graphics','controlled_tests','education', edu)
+# 	ptest(results)
 
-	try:	
-		os.mkdir(path)
-	except:
-		print("folder already exists")
+# 	path = os.path.join('..','graphics','controlled_tests','education', edu)
 
-	try:
-		graph_bar(results, path)
-	except:
-		print()
+# 	try:	
+# 		os.mkdir(path)
+# 	except:
+# 		print("folder already exists")
 
-# Control for race
+# 	try:
+# 		graph_bar(results, path)
+# 	except:
+# 		print()
 
-races = ["White", "Black or African American", "American Indian or Alaska Native", "Asian", "Native Hawaiian or Pacific Islander", "Other"]
+# # Control for race
 
-for race in races:
-	print(f"Race: {race}")
-	results = {}
-	for treatment in treatment_description:
-		lst = []
-		for respondent in respondents:
-			if respondent.treatment == treatment and respondent.ethnicity == race:
-				lst.append([respondent.responses[question] for question in respondent.responses])
+# races = ["White", "Black or African American", "American Indian or Alaska Native", "Asian", "Native Hawaiian or Pacific Islander", "Other"]
 
-		arr = np.transpose(np.array(lst))
-		results[treatment] = arr
+# for race in races:
+# 	print(f"Race: {race}")
+# 	results = {}
+# 	for treatment in treatment_description:
+# 		lst = []
+# 		for respondent in respondents:
+# 			if respondent.treatment == treatment and respondent.ethnicity == race:
+# 				lst.append([respondent.responses[question] for question in respondent.responses])
 
-	ptest(results)
+# 		arr = np.transpose(np.array(lst))
+# 		results[treatment] = arr
 
-	path = os.path.join('..','graphics','controlled_tests','race', race)
+# 	ptest(results)
 
-	try:	
-		os.mkdir(path)
-	except:
-		print("folder already exists")
+# 	path = os.path.join('..','graphics','controlled_tests','race', race)
 
-	try:
-		graph_bar(results, path)
-	except:
-		print()
+# 	try:	
+# 		os.mkdir(path)
+# 	except:
+# 		print("folder already exists")
 
-# Control for political knowledge
+# 	try:
+# 		graph_bar(results, path)
+# 	except:
+# 		print()
+
+# # Control for political knowledge
