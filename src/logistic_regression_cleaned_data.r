@@ -4,8 +4,8 @@ data <- read_csv("FALL 2021/GPI Initiative/cleaned_data.csv")
 #install.packages("dplyr") 
 
 # remove row with participant over 75 and less than high school because there is only one 
-data = data[data$age != "75 - 84", ]
-data = data[data$education != "Less than high school", ]
+#data = data[data$age != "75 - 84", ]
+#data = data[data$education != "Less than high school", ]
 
 #Print summary statistics 
 summary(data)
@@ -43,11 +43,7 @@ donut_data$labelPosition <- (donut_data$ymax + donut_data$ymin) / 2   # Compute 
 donut_data$label <- paste0(donut_data$category, "\n value: ", donut_data$count)
 
 ggplot(donut_data, aes(ymax=ymax, ymin=ymin, xmax=4, xmin=3, fill=category)) + geom_rect() +
-geom_label( x=3.5, aes(y=labelPosition, label=label), size=2.2) 
-+     scale_fill_brewer(palette=4) 
-+     coord_polar(theta="y") + xlim(c(2, 4)) 
-+     theme_void() 
-+     theme(legend.position = "none")
+geom_label( x=3.5, aes(y=labelPosition, label=label), size=2.2) + scale_fill_brewer(palette=4)  + coord_polar(theta="y") + xlim(c(2, 4)) + theme_void() + theme(legend.position = "none")
 
 
 #Create boxplots to compare questions 
@@ -104,9 +100,9 @@ index = sample(seq_len(nrow(new_data)), size = samplesize)
 train = new_data[index,]
 test = new_data[-index,]
 
-#library(dplyr)
-# library(MASS) 
-model <- polr(as.factor(Q1) ~ T1 + T2 + T3 + T4 + T5 + T6 + T7 + T8 + age + ethnicity + party + involvement + knowledge, data = train, Hess = TRUE)
+library(dplyr)
+library(MASS) 
+model <- polr(as.factor(Q1) ~ T1 + T2 + T3 + T4 + T5 + T6 + T7 + age + ethnicity + party + involvement + knowledge, data = train, Hess = TRUE)
 # model <- polr(Humanitarian_Q1 ~ Age + Income + Education + Ethnicity + Political_Party + Political_Involvement, Treatment_1, Treatment_2, Treatment_3, Treatment_4, Treatment_5, Treatment_6, Treatment_7, data = train, Hess = TRUE)
 summary(model)
 
@@ -114,7 +110,7 @@ summary(model)
 prediction = predict(model, test)
 table(test$Q1, prediction)
 
-#library("effects") 
+library("effects") 
 plot(Effect(focal.predictors = "party", model))
 plot(Effect(focal.predictors = "age", model))
 plot(Effect(focal.predictors = "ethnicity", model))
@@ -161,6 +157,7 @@ barplot(prop.table(table(x)))
 #Running a Logistic for Each Question (have to run each one by one)
 model <- polr(as.factor(Q1) ~ age + ethnicity + education + party + involvement + knowledge, Hess = TRUE)
 model(summary)
+
 model <- polr(as.factor(Q2) ~ age + ethnicity + education + party + involvement + knowledge, Hess = TRUE)
 model(summary)
 model <- polr(as.factor(Q3) ~ age + ethnicity + education + party + involvement + knowledge, Hess = TRUE)
@@ -185,7 +182,7 @@ model <- polr(as.factor(Q12) ~ age + ethnicity + education + party + involvement
 model(summary)
 
 #Running a Logistic for Each Question by treatment (have to run each one by one)
-model <- polr(as.factor(Q1) ~ T1 + T2 + T3 + T4 + T5 + T6 + T7 + T8, data = train, Hess = TRUE)
+model <- polr(as.factor(Q1) ~ T1 + T2 + T3 + T4 + T5 + T6 + T7, data = train, Hess = TRUE)
 model(summary)
 model <- polr(as.factor(Q2) ~ T1 + T2 + T3 + T4 + T5 + T6 + T7 + T8, data = train, Hess = TRUE)
 model(summary)
